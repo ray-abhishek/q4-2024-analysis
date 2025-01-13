@@ -60,18 +60,16 @@ def get_dev_trivia(df, dev_email):
 def create_dev_tabs(df):
     st.header("👩‍💻 Developer Deep Dive")
     
-    # Get unique developers, handle missing or non-string assignees
     devs = df['Assignee'].dropna().astype(str).unique()
-    
-    # Remove specific assignees and non-email values
     devs = [dev for dev in devs if dev not in ['asignee@domain.com', 'rahul.kalashetti@urbanpiper.com', 'zaid.ansari@urbanpiper.com'] and '@' in dev]
     
-    # Create tabs
     tabs = st.tabs([email.split('@')[0] for email in devs])
     
     for idx, dev in enumerate(devs):
         with tabs[idx]:
-            dev_df = df[df['Assignee'] == dev]
+            # Get developer's tasks and remove duplicates, keeping the latest entry
+            dev_df = df[df['Assignee'] == dev].sort_values('Updated', ascending=False)
+            dev_df = dev_df.drop_duplicates(subset=['ID'], keep='first')
             
             # Fun Trivia
             trivia = get_dev_trivia(df, dev)
@@ -80,13 +78,18 @@ def create_dev_tabs(df):
                 st.subheader("🎯 Fun Facts")
                 for fact in trivia.values():
                     st.write(fact)
-            
+
             # Tasks Table
             st.subheader("📝 Tasks")
-            if 'Created' in dev_df.columns:
-                dev_df = dev_df.sort_values('Created', ascending=False)
+
+            # Create display dataframe with story points
+            display_df = dev_df[['ID', 'Title', 'Status', 'Priority', 'Cycle Name', 'Labels', 'Estimate']]
+
+            # Convert Estimate column to numeric, replacing non-numeric values with 0
+            display_df['Estimate'] = pd.to_numeric(display_df['Estimate'], errors='coerce').fillna(0)
+
             st.dataframe(
-                dev_df[['ID', 'Title', 'Status', 'Priority', 'Cycle Name', 'Labels']],
+                display_df,
                 use_container_width=True,
                 column_config={
                     "ID": st.column_config.TextColumn("ID", width="small"),
@@ -95,6 +98,7 @@ def create_dev_tabs(df):
                     "Priority": st.column_config.TextColumn("Priority", width="small"),
                     "Cycle Name": st.column_config.TextColumn("Sprint", width="medium"),
                     "Labels": st.column_config.TextColumn("Labels", width="medium"),
+                    "Estimate": st.column_config.NumberColumn("Story Points", width="small", format="%.1f")
                 }
             )
 
