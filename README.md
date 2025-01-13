@@ -10,6 +10,8 @@ This project provides visual analytics and insights for Q4 2024 sprint data, inc
 - Priority distribution
 - Individual developer performance metrics
 
+Link to Dashboard -> https://q4-2024-analysis-menu-squad.streamlit.app/
+
 ## Prerequisites
 
 - Python 3.9+
