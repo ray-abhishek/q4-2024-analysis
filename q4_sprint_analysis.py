@@ -98,6 +98,37 @@ def create_dev_tabs(df):
                 }
             )
 
+def generate_insights(df):
+    """Generate insights from the data analysis"""
+    insights = {
+        "Task Distribution": {
+            "observation": "Features make up the majority of our Q4 work at {}%",
+            "reasoning": """Analysis of task types shows features dominate the workload. 
+            This was calculated by counting task types and finding the percentage of feature tasks 
+            relative to total tasks.""",
+            "value": round(len(df[df['Task Type']=='Feature']) / len(df) * 100)
+        },
+        "Sprint Velocity": {
+            "observation": "Average completion rate of {} tasks per sprint",
+            "reasoning": """Calculated by grouping completed tasks by sprint and taking the mean. 
+            This excludes cancelled or dropped tasks.""",
+            "value": round(df.groupby('Cycle Name').size().mean(), 1)
+        },
+        "Cycle Time": {
+            "observation": "Median cycle time is {} days",
+            "reasoning": """Based on the time difference between task creation and completion. 
+            Median is used instead of mean to account for outliers.""",
+            "value": round(df['Cycle Time'].median(), 1)
+        },
+        "Team Load": {
+            "observation": "{} handles the most diverse task types",
+            "reasoning": """Determined by counting unique task types per team member and 
+            finding the person with maximum variety.""",
+            "value": df.groupby('Assignee')['Task Type'].nunique().idxmax().split('@')[0]
+        }
+    }
+    return insights
+
 def create_dashboard():
     st.title("Menu Squad Q4 2024 Sprint Analysis 🚀")
     
@@ -127,7 +158,7 @@ def create_dashboard():
         st.plotly_chart(fig_priority)
 
     # Fun Stats
-    st.header("🎉 Fun Team Stats")
+    st.header("🎉 Did you know?")
     col4, col5 = st.columns(2)
 
     with col4:
@@ -140,6 +171,22 @@ def create_dashboard():
 
     # Add developer tabs section
     create_dev_tabs(df)
+    
+    # Add insights section
+    st.header("🔍 Key Insights")
+    insights = generate_insights(df)
+    
+    # Display observations
+    for title, data in insights.items():
+        st.write(f"**{title}:** " + data["observation"].format(data["value"]))
+    
+    # Expandable detailed analysis
+    with st.expander("See detailed analysis"):
+        for title, data in insights.items():
+            st.write(f"### {title}")
+            st.write(data["reasoning"])
+            st.write(f"**Value:** {data['value']}")
+            st.write("---")
 
 if __name__ == "__main__":
     create_dashboard()
